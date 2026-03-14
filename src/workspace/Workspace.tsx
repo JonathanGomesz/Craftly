@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "../lib/supabase";
 
 type Project = {
@@ -21,31 +21,36 @@ type Project = {
   workspace_clients?: {
     id: string;
     name: string;
-  }[] | null;
+  } | null;
 
   workspace_subclients?: {
     id: string;
     name: string;
-  }[] | null;
+  } | null;
 
   workspace_statuses?: {
     id: string;
     name: string;
     color: string | null;
-  }[] | null;
+  } | null;
 
   workspace_priorities?: {
     id: string;
     name: string;
     color: string | null;
-  }[] | null;
+  } | null;
 
   workspace_types?: {
     id: string;
     name: string;
     color: string | null;
-  }[] | null;
+  } | null;
 };
+
+function toOne<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
 
 type WorkspaceClient = {
   id: string;
@@ -79,44 +84,22 @@ type WorkspaceType = {
   sort_order: number;
 };
 
-function ColorBadge({
-  label,
-  color,
-}: {
-  label: string;
-  color: string | null;
-}) {
-  const safeColor = color || "#64748b";
-
-  return (
-    <span
-      className="text-xs px-3 py-1 rounded-full border"
-      style={{
-        color: safeColor,
-        borderColor: safeColor,
-        backgroundColor: `${safeColor}18`,
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
 export default function Workspace() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "board">("board");
-  const [expandedBoardCards, setExpandedBoardCards] = useState<
-    Record<string, boolean>
-  >({});
 
   const [clients, setClients] = useState<WorkspaceClient[]>([]);
   const [subclients, setSubclients] = useState<WorkspaceSubclient[]>([]);
   const [statuses, setStatuses] = useState<WorkspaceStatus[]>([]);
   const [priorities, setPriorities] = useState<WorkspacePriority[]>([]);
   const [types, setTypes] = useState<WorkspaceType[]>([]);
+
+  const [clientFilter, setClientFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
 
   const [title, setTitle] = useState("");
   const [clientId, setClientId] = useState("");
@@ -152,38 +135,6 @@ export default function Workspace() {
   useEffect(() => {
     void loadAll();
   }, []);
-
-  const filteredSubclients = useMemo(() => {
-    if (!clientId) return [];
-    return subclients.filter((s) => s.client_id === clientId);
-  }, [subclients, clientId]);
-
-  const filteredEditSubclients = useMemo(() => {
-    if (!editClientId) return [];
-    return subclients.filter((s) => s.client_id === editClientId);
-  }, [subclients, editClientId]);
-
-  const boardColumns = useMemo(() => {
-    const noStatusColumn = {
-      id: "__no_status__",
-      name: "No Status",
-      color: "#64748b",
-    };
-
-    const dynamicColumns = statuses.map((status) => ({
-      id: status.id,
-      name: status.name,
-      color: status.color,
-    }));
-
-    return [noStatusColumn, ...dynamicColumns].map((column) => ({
-      ...column,
-      projects: projects.filter((project) => {
-        if (column.id === "__no_status__") return !project.status_id;
-        return project.status_id === column.id;
-      }),
-    }));
-  }, [projects, statuses]);
 
   async function getUserId() {
     const { data } = await supabase.auth.getSession();
@@ -274,7 +225,18 @@ export default function Workspace() {
     if (prioritiesRes.error) setMsg(prioritiesRes.error.message);
     if (typesRes.error) setMsg(typesRes.error.message);
 
-    setProjects((projectsRes.data ?? []) as Project[]);
+    const normalizedProjects: Project[] = ((projectsRes.data ?? []) as any[]).map(
+      (project) => ({
+        ...project,
+        workspace_clients: toOne(project.workspace_clients),
+        workspace_subclients: toOne(project.workspace_subclients),
+        workspace_statuses: toOne(project.workspace_statuses),
+        workspace_priorities: toOne(project.workspace_priorities),
+        workspace_types: toOne(project.workspace_types),
+      })
+    );
+
+    setProjects(normalizedProjects);
     setClients((clientsRes.data ?? []) as WorkspaceClient[]);
     setSubclients((subclientsRes.data ?? []) as WorkspaceSubclient[]);
     setStatuses((statusesRes.data ?? []) as WorkspaceStatus[]);
@@ -283,6 +245,22 @@ export default function Workspace() {
 
     setLoading(false);
   }
+
+  const filteredSubclients = clientId
+    ? subclients.filter((s) => s.client_id === clientId)
+    : [];
+
+  const filteredEditSubclients = editClientId
+    ? subclients.filter((s) => s.client_id === editClientId)
+    : [];
+
+  const visibleProjects = projects.filter((project) => {
+    if (clientFilter && project.client_id !== clientFilter) return false;
+    if (statusFilter && project.status_id !== statusFilter) return false;
+    if (priorityFilter && project.priority_id !== priorityFilter) return false;
+    if (typeFilter && project.type_id !== typeFilter) return false;
+    return true;
+  });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -432,13 +410,11 @@ export default function Workspace() {
               ...p,
               status_id: nextStatusId || null,
               workspace_statuses: selectedStatus
-                ? [
-                    {
-                      id: selectedStatus.id,
-                      name: selectedStatus.name,
-                      color: selectedStatus.color,
-                    },
-                  ]
+                ? {
+                    id: selectedStatus.id,
+                    name: selectedStatus.name,
+                    color: selectedStatus.color,
+                  }
                 : null,
             }
           : p
@@ -467,13 +443,11 @@ export default function Workspace() {
               ...project,
               priority_id: nextPriorityId || null,
               workspace_priorities: selectedPriority
-                ? [
-                    {
-                      id: selectedPriority.id,
-                      name: selectedPriority.name,
-                      color: selectedPriority.color,
-                    },
-                  ]
+                ? {
+                    id: selectedPriority.id,
+                    name: selectedPriority.name,
+                    color: selectedPriority.color,
+                  }
                 : null,
             }
           : project
@@ -501,13 +475,11 @@ export default function Workspace() {
               ...project,
               type_id: nextTypeId || null,
               workspace_types: selectedType
-                ? [
-                    {
-                      id: selectedType.id,
-                      name: selectedType.name,
-                      color: selectedType.color,
-                    },
-                  ]
+                ? {
+                    id: selectedType.id,
+                    name: selectedType.name,
+                    color: selectedType.color,
+                  }
                 : null,
             }
           : project
@@ -515,167 +487,6 @@ export default function Workspace() {
     );
   }
 
-  async function updateClientAndSubclient(
-    id: string,
-    nextClientId: string,
-    nextSubclientId: string
-  ) {
-    const selectedClient = clients.find((c) => c.id === nextClientId) ?? null;
-    const selectedSubclient =
-      subclients.find((s) => s.id === nextSubclientId) ?? null;
-
-    const { error } = await supabase
-      .from("projects")
-      .update({
-        client_id: nextClientId || null,
-        client_name: selectedClient?.name ?? null,
-        subclient_id: nextSubclientId || null,
-      })
-      .eq("id", id);
-
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === id
-          ? {
-              ...project,
-              client_id: nextClientId || null,
-              client_name: selectedClient?.name ?? null,
-              subclient_id: nextSubclientId || null,
-              workspace_clients: selectedClient
-                ? [
-                    {
-                      id: selectedClient.id,
-                      name: selectedClient.name,
-                    },
-                  ]
-                : null,
-              workspace_subclients: selectedSubclient
-                ? [
-                    {
-                      id: selectedSubclient.id,
-                      name: selectedSubclient.name,
-                    },
-                  ]
-                : null,
-            }
-          : project
-      )
-    );
-  }
-
-  async function updateDueDate(id: string, nextDueDate: string) {
-    const { error } = await supabase
-      .from("projects")
-      .update({ due_date: nextDueDate || null })
-      .eq("id", id);
-
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === id
-          ? {
-              ...project,
-              due_date: nextDueDate || null,
-            }
-          : project
-      )
-    );
-  }
-
-  async function updateBudget(id: string, nextBudget: string) {
-    const parsedBudget = nextBudget.trim() === "" ? null : Number(nextBudget);
-
-    if (nextBudget.trim() !== "" && Number.isNaN(parsedBudget)) {
-      setMsg("Budget must be a valid number.");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("projects")
-      .update({ budget: parsedBudget })
-      .eq("id", id);
-
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === id
-          ? {
-              ...project,
-              budget: parsedBudget,
-            }
-          : project
-      )
-    );
-  }
-
-  async function updateTitle(id: string, nextTitle: string) {
-    const trimmedTitle = nextTitle.trim();
-
-    if (!trimmedTitle) {
-      setMsg("Project title cannot be empty.");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("projects")
-      .update({ title: trimmedTitle })
-      .eq("id", id);
-
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === id
-          ? {
-              ...project,
-              title: trimmedTitle,
-            }
-          : project
-      )
-    );
-  }
-
-  async function updateDescription(id: string, nextDescription: string) {
-    const normalizedDescription =
-      nextDescription.trim() === "" ? null : nextDescription;
-
-    const { error } = await supabase
-      .from("projects")
-      .update({ description: normalizedDescription })
-      .eq("id", id);
-
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === id
-          ? {
-              ...project,
-              description: normalizedDescription,
-            }
-          : project
-      )
-    );
-  }
 
   async function deleteProject(id: string) {
     const ok = window.confirm("Delete this project?");
@@ -691,272 +502,118 @@ export default function Workspace() {
     setProjects((prev) => prev.filter((p) => p.id !== id));
   }
 
-  function toggleBoardCard(id: string) {
-    setExpandedBoardCards((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+  function inlineSelectStyle(color: string | null) {
+    const safeColor = color || "#64748b";
+
+    return {
+      color: safeColor,
+      borderColor: safeColor,
+      backgroundColor: `${safeColor}18`,
+    };
   }
 
-  function renderProjectCard(p: Project, compact = false) {
-    const isBoardCollapsed = compact && !expandedBoardCards[p.id];
+  function renderProjectCard(p: Project) {
+    const statusMeta = p.workspace_statuses ?? null;
+    const priorityMeta = p.workspace_priorities ?? null;
+    const typeMeta = p.workspace_types ?? null;
+    const clientLabel =
+      p.workspace_clients?.name ?? p.client_name ?? "No client";
+    const subclientLabel = p.workspace_subclients?.name ?? "No sub client";
 
     return (
       <div
         key={p.id}
-        className="rounded-2xl border border-[color:var(--border-soft)] p-4 md:p-5 backdrop-blur-lg shadow-[var(--card-shadow-soft)]"
+        className="rounded-2xl border border-[color:var(--border-soft)] p-4 backdrop-blur-lg shadow-[var(--card-shadow-soft)]"
         style={{ backgroundColor: "var(--surface-soft)" }}
       >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div>
-              <div className="flex items-center justify-between gap-3">
-                <label className="text-xs font-medium text-[var(--text-muted)]">
-                  Title
-                </label>
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-4 text-sm text-[var(--text-muted)]">
+              <div className="min-w-0 text-base font-semibold text-[var(--text-main)] truncate">
+                {p.title}
+              </div>
 
-                {compact && (
-                  <button
-                    type="button"
-                    onClick={() => toggleBoardCard(p.id)}
-                    className="text-xs px-2 py-1 rounded-md border border-[color:var(--border-soft)] bg-[var(--surface-soft)] text-[var(--text-main)] opacity-80 hover:bg-[var(--surface-hover)]"
+              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <div className="truncate">{clientLabel}</div>
+
+              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <div className="truncate">{subclientLabel}</div>
+
+              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <select
+                value={p.status_id ?? ""}
+                onChange={(e) => void updateStatus(p.id, e.target.value)}
+                className="min-w-[110px] appearance-none rounded-full border px-3 py-1 text-xs font-medium outline-none transition"
+                style={inlineSelectStyle(statusMeta?.color ?? null)}
+              >
+                <option value="" className="text-black">
+                  No status
+                </option>
+                {statuses.map((status) => (
+                  <option
+                    key={status.id}
+                    value={status.id}
+                    className="text-black"
                   >
-                    {isBoardCollapsed ? "Expand" : "Collapse"}
-                  </button>
-                )}
-              </div>
+                    {status.name}
+                  </option>
+                ))}
+              </select>
 
-              <input
-                value={p.title}
-                onChange={(e) =>
-                  setProjects((prev) =>
-                    prev.map((project) =>
-                      project.id === p.id
-                        ? { ...project, title: e.target.value }
-                        : project
-                    )
-                  )
-                }
-                onBlur={(e) => void updateTitle(p.id, e.target.value)}
-                className="mt-1 w-full appearance-none rounded-lg border border-[color:var(--border-soft)] px-3 py-2 bg-[var(--surface-soft)] text-base font-semibold text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[color:var(--accent-soft)]"
-                placeholder="Project title"
-              />
+              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <select
+                value={p.priority_id ?? ""}
+                onChange={(e) => void updatePriority(p.id, e.target.value)}
+                className="min-w-[110px] appearance-none rounded-full border px-3 py-1 text-xs font-medium outline-none transition"
+                style={inlineSelectStyle(priorityMeta?.color ?? null)}
+              >
+                <option value="" className="text-black">
+                  No priority
+                </option>
+                {priorities.map((priority) => (
+                  <option
+                    key={priority.id}
+                    value={priority.id}
+                    className="text-black"
+                  >
+                    {priority.name}
+                  </option>
+                ))}
+              </select>
+
+              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <select
+                value={p.type_id ?? ""}
+                onChange={(e) => void updateType(p.id, e.target.value)}
+                className="min-w-[110px] appearance-none rounded-full border px-3 py-1 text-xs font-medium outline-none transition"
+                style={inlineSelectStyle(typeMeta?.color ?? null)}
+              >
+                <option value="" className="text-black">
+                  No type
+                </option>
+                {types.map((type) => (
+                  <option key={type.id} value={type.id} className="text-black">
+                    {type.name}
+                  </option>
+                ))}
+              </select>
             </div>
-
-            <div className="flex flex-wrap gap-2 mt-2">
-              {p.workspace_statuses?.[0] && (
-                <ColorBadge
-                  label={p.workspace_statuses[0].name}
-                  color={p.workspace_statuses[0].color}
-                />
-              )}
-
-              {p.workspace_priorities?.[0] && (
-                <ColorBadge
-                  label={p.workspace_priorities[0].name}
-                  color={p.workspace_priorities[0].color}
-                />
-              )}
-
-              {p.workspace_types?.[0] && (
-                <ColorBadge
-                  label={p.workspace_types[0].name}
-                  color={p.workspace_types[0].color}
-                />
-              )}
-
-              <span className="text-xs px-3 py-1 rounded-full border bg-[var(--surface-soft)] border-[color:var(--border-soft)] text-[var(--text-muted)]">
-                {p.source === "manual" ? "Manual" : "Craftly"}
-              </span>
-            </div>
-
-            {isBoardCollapsed && (
-              <div className="mt-3 text-xs text-[var(--text-faint)] rounded-lg border border-[color:var(--border-soft)] bg-[var(--surface-soft)] px-3 py-2">
-                {p.client_name || "No client"}
-                {p.due_date ? ` • Due ${p.due_date}` : ""}
-                {p.budget != null
-                  ? ` • LKR ${Number(p.budget).toLocaleString()}`
-                  : ""}
-              </div>
-            )}
-
-            {!isBoardCollapsed && (
-              <>
-                <div
-                  className={`mt-3 grid gap-3 ${
-                    compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
-                  }`}
-                >
-                  <div>
-                    <label className="text-xs font-medium text-[var(--text-muted)]">
-                      Client
-                    </label>
-                    <select
-                      value={p.client_id ?? ""}
-                      onChange={(e) =>
-                        void updateClientAndSubclient(p.id, e.target.value, "")
-                      }
-                      className={premiumSelectClass}
-                    >
-                      <option value="">No client</option>
-                      {clients.map((client) => (
-                        <option key={client.id} value={client.id} className="text-black">
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-[var(--text-muted)]">
-                      Sub client
-                    </label>
-                    <select
-                      value={p.subclient_id ?? ""}
-                      onChange={(e) =>
-                        void updateClientAndSubclient(
-                          p.id,
-                          p.client_id ?? "",
-                          e.target.value
-                        )
-                      }
-                      className={premiumSelectClass}
-                      disabled={!p.client_id}
-                    >
-                      <option value="">No sub client</option>
-                      {subclients
-                        .filter((sub) => sub.client_id === p.client_id)
-                        .map((sub) => (
-                          <option key={sub.id} value={sub.id} className="text-black">
-                            {sub.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  <label className="text-xs font-medium text-white/60">
-                    Description
-                  </label>
-                <textarea
-                  value={p.description ?? ""}
-                  onChange={(e) =>
-                    setProjects((prev) =>
-                      prev.map((project) =>
-                        project.id === p.id
-                          ? {
-                              ...project,
-                              description: e.target.value,
-                            }
-                          : project
-                      )
-                    )
-                  }
-                  onBlur={(e) => void updateDescription(p.id, e.target.value)}
-                  rows={compact ? 2 : 3}
-                  className="mt-1 w-full appearance-none rounded-lg border border-[color:var(--border-soft)] px-3 py-2 bg-[var(--surface-soft)] text-sm text-[var(--text-main)] opacity-80 outline-none focus:ring-2 focus:ring-[color:var(--accent-soft)]"
-                  placeholder="Add project notes..."
-                />
-                </div>
-
-                <div
-                  className={`mt-3 grid gap-3 ${
-                    compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
-                  }`}
-                >
-                  <div>
-                    <label className="text-xs font-medium text-[var(--text-muted)]">
-                      Due date
-                    </label>
-                    <input
-                      type="date"
-                      value={p.due_date ?? ""}
-                      onChange={(e) => void updateDueDate(p.id, e.target.value)}
-                      className="mt-1 w-full appearance-none rounded-lg border border-[color:var(--border-soft)] px-3 py-2 bg-[var(--surface-soft)] text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[color:var(--accent-soft)]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-[var(--text-muted)]">
-                      Budget (LKR)
-                    </label>
-                    <input
-                      inputMode="decimal"
-                      value={p.budget != null ? String(p.budget) : ""}
-                      onChange={(e) => void updateBudget(p.id, e.target.value)}
-                      className="mt-1 w-full appearance-none rounded-lg border border-[color:var(--border-soft)] px-3 py-2 bg-[var(--surface-soft)] text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[color:var(--accent-soft)]"
-                      placeholder="25000"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
-          <div className={`flex flex-col gap-2 ${compact ? "" : "lg:min-w-[220px]"}`}>
-            {isBoardCollapsed && (
-              <div className="text-xs text-[var(--text-faint)] rounded-lg border border-[color:var(--border-soft)] bg-[var(--surface-soft)] px-3 py-2">
-                {p.client_name || "No client"}
-                {p.due_date ? ` • Due ${p.due_date}` : ""}
-                {p.budget != null ? ` • LKR ${Number(p.budget).toLocaleString()}` : ""}
-              </div>
-            )}
-
-            <select
-              value={p.status_id ?? ""}
-              onChange={(e) => void updateStatus(p.id, e.target.value)}
-              className={premiumSelectClass}
+          <div className="flex items-center gap-2 self-start xl:self-center">
+            <button
+              onClick={() => openEditModal(p)}
+              className="px-3 py-2 rounded-lg border border-[color:var(--border-soft)] bg-[var(--surface-soft)] text-sm text-[var(--text-main)] transition hover:bg-[var(--surface-hover)]"
             >
-              <option value="">No status</option>
-              {statuses.map((status) => (
-                <option key={status.id} value={status.id} className="text-black">
-                  Status: {status.name}
-                </option>
-              ))}
-            </select>
+              Edit
+            </button>
 
-            <select
-              value={p.priority_id ?? ""}
-              onChange={(e) => void updatePriority(p.id, e.target.value)}
-              className={premiumSelectClass}
+            <button
+              onClick={() => void deleteProject(p.id)}
+              className="px-3 py-2 rounded-lg border border-red-400/20 bg-red-500/10 text-sm text-red-300 transition hover:bg-red-500/15"
             >
-              <option value="">No priority</option>
-              {priorities.map((priority) => (
-                <option key={priority.id} value={priority.id} className="text-black">
-                  Priority: {priority.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={p.type_id ?? ""}
-              onChange={(e) => void updateType(p.id, e.target.value)}
-              className={premiumSelectClass}
-            >
-              <option value="">No type</option>
-              {types.map((type) => (
-                <option key={type.id} value={type.id} className="text-black">
-                  Type: {type.name}
-                </option>
-              ))}
-            </select>
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <button
-                onClick={() => openEditModal(p)}
-                className="w-full sm:w-auto px-3 py-2 rounded-lg border border-[color:var(--border-soft)] bg-[var(--surface-soft)] text-sm text-[var(--text-main)] transition hover:bg-[var(--surface-hover)]"
-              >
-                Edit
-              </button>
-
-              <button
-                onClick={() => void deleteProject(p.id)}
-                className="w-full sm:w-auto px-3 py-2 rounded-lg border border-red-400/20 bg-red-500/10 text-sm text-red-300 transition hover:bg-red-500/15"
-              >
-                Delete
-              </button>
-            </div>
+              Delete
+            </button>
           </div>
         </div>
       </div>
@@ -1029,7 +686,11 @@ export default function Workspace() {
               >
                 <option value="">Select client</option>
                 {clients.map((client) => (
-                  <option key={client.id} value={client.id} className="text-black">
+                  <option
+                    key={client.id}
+                    value={client.id}
+                    className="text-black"
+                  >
                     {client.name}
                   </option>
                 ))}
@@ -1106,7 +767,11 @@ export default function Workspace() {
               >
                 <option value="">Select priority</option>
                 {priorities.map((priority) => (
-                  <option key={priority.id} value={priority.id} className="text-black">
+                  <option
+                    key={priority.id}
+                    value={priority.id}
+                    className="text-black"
+                  >
                     {priority.name}
                   </option>
                 ))}
@@ -1188,84 +853,113 @@ export default function Workspace() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="inline-flex rounded-xl border border-[color:var(--border-soft)] bg-[var(--surface-soft)] p-1">
-              <button
-                type="button"
-                onClick={() => setViewMode("board")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                  viewMode === "board"
-                    ? "bg-[var(--surface-hover)] text-[var(--text-main)] shadow-sm"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)]"
-                }`}
+          <div className="flex flex-col gap-3 md:items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full md:w-auto">
+              <select
+                value={clientFilter}
+                onChange={(e) => setClientFilter(e.target.value)}
+                className="min-w-[180px] rounded-xl border border-[color:var(--border-soft)] bg-[var(--surface-soft)] px-4 py-2 text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[color:var(--accent-soft)]"
               >
-                Board
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                  viewMode === "list"
-                    ? "bg-[var(--surface-hover)] text-[var(--text-main)] shadow-sm"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)]"
-                }`}
+                <option value="" className="text-black">
+                  All clients
+                </option>
+                {clients.map((client) => (
+                  <option
+                    key={client.id}
+                    value={client.id}
+                    className="text-black"
+                  >
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="min-w-[160px] rounded-xl border border-[color:var(--border-soft)] bg-[var(--surface-soft)] px-4 py-2 text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[color:var(--accent-soft)]"
               >
-                List
-              </button>
+                <option value="" className="text-black">
+                  All statuses
+                </option>
+                {statuses.map((status) => (
+                  <option
+                    key={status.id}
+                    value={status.id}
+                    className="text-black"
+                  >
+                    {status.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="min-w-[160px] rounded-xl border border-[color:var(--border-soft)] bg-[var(--surface-soft)] px-4 py-2 text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[color:var(--accent-soft)]"
+              >
+                <option value="" className="text-black">
+                  All priorities
+                </option>
+                {priorities.map((priority) => (
+                  <option
+                    key={priority.id}
+                    value={priority.id}
+                    className="text-black"
+                  >
+                    {priority.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="min-w-[160px] rounded-xl border border-[color:var(--border-soft)] bg-[var(--surface-soft)] px-4 py-2 text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[color:var(--accent-soft)]"
+              >
+                <option value="" className="text-black">
+                  All types
+                </option>
+                {types.map((type) => (
+                  <option key={type.id} value={type.id} className="text-black">
+                    {type.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="text-sm text-[var(--text-muted)]">
-              {projects.length} total
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setClientFilter("");
+                  setStatusFilter("");
+                  setPriorityFilter("");
+                  setTypeFilter("");
+                }}
+                className="px-3 py-2 rounded-lg border border-[color:var(--border-soft)] bg-[var(--surface-soft)] text-sm text-[var(--text-main)] transition hover:bg-[var(--surface-hover)]"
+              >
+                Clear Filters
+              </button>
+
+              <div className="text-sm text-[var(--text-muted)]">
+                {visibleProjects.length} total
+              </div>
             </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="mt-4 text-[var(--text-muted)]">Loading projects...</div>
-        ) : projects.length === 0 ? (
-          <div className="mt-4 text-[var(--text-muted)]">No projects yet.</div>
-        ) : viewMode === "list" ? (
-          <div className="mt-4 grid gap-4">
-            {projects.map((p) => renderProjectCard(p))}
+          <div className="mt-4 text-[var(--text-muted)]">
+            Loading projects...
+          </div>
+        ) : visibleProjects.length === 0 ? (
+          <div className="mt-4 text-[var(--text-muted)]">
+            No projects found.
           </div>
         ) : (
-          <div className="mt-4 overflow-x-auto pb-2">
-            <div className="flex gap-4 min-w-max items-start">
-              {boardColumns.map((column) => (
-                <div
-                  key={column.id}
-                  className="w-[360px] shrink-0 rounded-2xl border border-[color:var(--border-soft)] p-4 backdrop-blur-xl shadow-[var(--card-shadow-soft)]"
-                  style={{ backgroundColor: "var(--surface-soft)" }}
-                >
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0"
-                        style={{ backgroundColor: column.color || "#64748b" }}
-                      />
-                      <h3 className="font-semibold text-[var(--text-main)] truncate">
-                        {column.name}
-                      </h3>
-                    </div>
-                    <span className="text-xs px-2 py-1 rounded-full border bg-[var(--surface-soft)] border-[color:var(--border-soft)] text-[var(--text-muted)]">
-                      {column.projects.length}
-                    </span>
-                  </div>
-
-                  <div className="grid gap-4">
-                    {column.projects.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-[color:var(--border-soft)] bg-[var(--surface-soft)] p-4 text-sm text-[var(--text-faint)]">
-                        No projects in this column.
-                      </div>
-                    ) : (
-                      column.projects.map((project) =>
-                        renderProjectCard(project, true)
-                      )
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="mt-4 grid gap-4">
+            {visibleProjects.map((p) => renderProjectCard(p))}
           </div>
         )}
       </section>
@@ -1328,7 +1022,11 @@ export default function Workspace() {
                   >
                     <option value="">Select client</option>
                     {clients.map((client) => (
-                      <option key={client.id} value={client.id} className="text-black">
+                      <option
+                        key={client.id}
+                        value={client.id}
+                        className="text-black"
+                      >
                         {client.name}
                       </option>
                     ))}
@@ -1385,7 +1083,11 @@ export default function Workspace() {
                   >
                     <option value="">Select status</option>
                     {statuses.map((status) => (
-                      <option key={status.id} value={status.id} className="text-black">
+                      <option
+                        key={status.id}
+                        value={status.id}
+                        className="text-black"
+                      >
                         {status.name}
                       </option>
                     ))}
@@ -1405,7 +1107,11 @@ export default function Workspace() {
                   >
                     <option value="">Select priority</option>
                     {priorities.map((priority) => (
-                      <option key={priority.id} value={priority.id} className="text-black">
+                      <option
+                        key={priority.id}
+                        value={priority.id}
+                        className="text-black"
+                      >
                         {priority.name}
                       </option>
                     ))}
@@ -1474,4 +1180,3 @@ export default function Workspace() {
     </div>
   );
 }
-
