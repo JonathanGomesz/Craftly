@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+
+  --accent: #8fd14f;
+
+  --bg-base: #f6f8f7;
+  --bg-main: #f6f8f7;
+  --bg-gradient:
+    radial-gradient(circle at 16% 18%, rgba(39, 59, 79, 0.08), transparent 28%),
+    radial-gradient(circle at 82% 16%, rgba(143, 209, 79, 0.08), transparent 18%),
+    radial-gradient(circle at 84% 76%, rgba(39, 59, 79, 0.05), transparent 24%),
+    linear-gradient(180deg, #f6f8f7 0%, #eef2ef 40%, #e9efea 100%);
+
+  --bg-panel: rgba(255, 255, 255, 0.72);
+  --panel-surface: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.82),
+    rgba(255, 255, 255, 0.66)
+  );
+  --panel-surface-strong: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.74)
+  );
+
+  --surface-soft: rgba(255, 255, 255, 0.56);
+  --surface-softer: rgba(255, 255, 255, 0.74);
+  --surface-strong: rgba(255, 255, 255, 0.84);
+  --surface-hover: rgba(255, 255, 255, 0.92);
+
+  --text-main: #182028;
+  --text-soft: #314050;
+  --text-muted: #647181;
+  --text-faint: #7b8794;
+
+  --border-soft: rgba(24, 32, 40, 0.08);
+  --border-strong: rgba(24, 32, 40, 0.12);
+
+  --accent-soft: rgba(143, 209, 79, 0.18);
+  --accent-border: rgba(143, 209, 79, 0.34);
+  --accent-ring: rgba(143, 209, 79, 0.16);
+  --accent-glow: rgba(143, 209, 79, 0.1);
+  --accent-glow-soft: rgba(143, 209, 79, 0.16);
+  --accent-glow-strong: rgba(143, 209, 79, 0.36);
+
+  --glow-navy-strong: rgba(39, 59, 79, 0.1);
+  --glow-navy-soft: rgba(39, 59, 79, 0.06);
+  --glow-accent-soft: rgba(143, 209, 79, 0.1);
+  --glow-accent-faint: rgba(143, 209, 79, 0.06);
+  --glow-cream-soft: rgba(255, 255, 255, 0.22);
+
+  --panel-shadow:
+    0 18px 48px rgba(18, 24, 31, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --card-shadow: 0 18px 48px rgba(18, 24, 31, 0.1);
+  --card-shadow-soft: 0 14px 34px rgba(18, 24, 31, 0.08);
+  --card-shadow-strong: 0 22px 58px rgba(18, 24, 31, 0.12);
+  --button-shadow: 0 12px 28px rgba(39, 59, 79, 0.12);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-base: #17181a;
+  --bg-main: #17181a;
+  --bg-gradient:
+    radial-gradient(circle at 16% 18%, rgba(39, 59, 79, 0.42), transparent 28%),
+    radial-gradient(circle at 82% 16%, rgba(143, 209, 79, 0.12), transparent 18%),
+    radial-gradient(circle at 84% 76%, rgba(254, 248, 225, 0.06), transparent 26%),
+    radial-gradient(circle at 50% 120%, rgba(39, 59, 79, 0.18), transparent 36%),
+    linear-gradient(180deg, #17181a 0%, #1b1e22 38%, #151719 100%);
+
+  --bg-panel: rgba(24, 26, 28, 0.74);
+  --panel-surface: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.065),
+    rgba(255, 255, 255, 0.04)
+  );
+  --panel-surface-strong: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.02)
+  );
+
+  --surface-soft: rgba(255, 255, 255, 0.05);
+  --surface-softer: rgba(255, 255, 255, 0.08);
+  --surface-strong: rgba(39, 59, 79, 0.35);
+  --surface-hover: rgba(255, 255, 255, 0.1);
+
+  --text-main: #fef8e1;
+  --text-soft: #dfe7d4;
+  --text-muted: #95a1af;
+  --text-faint: #798992;
+
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --accent-soft: rgba(143, 209, 79, 0.2);
+  --accent-border: rgba(143, 209, 79, 0.34);
+  --accent-ring: rgba(143, 209, 79, 0.16);
+  --accent-glow: rgba(143, 209, 79, 0.1);
+  --accent-glow-soft: rgba(143, 209, 79, 0.16);
+  --accent-glow-strong: rgba(143, 209, 79, 0.45);
+
+  --glow-navy-strong: rgba(39, 59, 79, 0.24);
+  --glow-navy-soft: rgba(39, 59, 79, 0.12);
+  --glow-accent-soft: rgba(143, 209, 79, 0.1);
+  --glow-accent-faint: rgba(143, 209, 79, 0.08);
+  --glow-cream-soft: rgba(254, 248, 225, 0.035);
+
+  --panel-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --card-shadow: 0 20px 56px rgba(0, 0, 0, 0.28);
+  --card-shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.24);
+  --card-shadow-strong: 0 24px 64px rgba(0, 0, 0, 0.3);
+  --button-shadow: 0 12px 28px rgba(39, 59, 79, 0.22);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text-main);
+  background: var(--bg-main);
+  background-image: var(--bg-gradient);
+}
