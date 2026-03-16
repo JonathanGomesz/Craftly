@@ -9,7 +9,7 @@ const navBase =
 const accent = "#8fd14f";
 
 const primaryCtaClass =
-  "ml-2 rounded-xl border px-4 py-2 font-semibold transition-all duration-200 hover:-translate-y-[1px] hover:brightness-105 active:translate-y-0 active:brightness-95";
+  "rounded-xl border px-4 py-2 font-semibold whitespace-nowrap transition-all duration-200 hover:-translate-y-[1px] hover:brightness-105 active:translate-y-0 active:brightness-95";
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -97,142 +97,150 @@ export default function Layout() {
 
       <header className="sticky top-0 z-40 px-4 pt-4 md:px-6">
         <div
-          className="mx-auto flex max-w-7xl flex-col gap-3 rounded-[26px] border px-5 py-3 backdrop-blur-2xl md:flex-row md:items-center md:justify-between"
+          className="mx-auto max-w-7xl rounded-[26px] border px-5 py-3 backdrop-blur-2xl"
           style={{
             borderColor: "var(--border-soft)",
             backgroundColor: "var(--bg-panel)",
             boxShadow: "var(--panel-shadow), 0 0 0 1px var(--accent-ring)",
           }}
         >
-          <Link to="/" className="flex shrink-0 items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div
-                className="font-semibold text-lg tracking-[0.01em]"
-                style={{ color: "var(--text-main)" }}
-              >
-                Craftly
-              </div>
-              <div
-                className="h-2.5 w-2.5 rounded-full"
-                style={{
-                  backgroundColor: accent,
-                  boxShadow: "0 0 18px rgba(143,209,79,0.45)",
-                }}
-              />
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+            <div className="flex min-w-0 items-center justify-between gap-3 lg:w-auto lg:shrink-0">
+              <Link to="/" className="flex min-w-0 shrink-0 items-center gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div
+                    className="truncate text-lg font-semibold tracking-[0.01em]"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Craftly
+                  </div>
+                  <div
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor: accent,
+                      boxShadow: "0 0 18px rgba(143,209,79,0.45)",
+                    }}
+                  />
+                </div>
+              </Link>
             </div>
-          </Link>
 
-          <nav className="flex w-full flex-wrap items-center justify-start gap-2 text-sm md:w-auto md:justify-end md:gap-2.5">
-            <NavLink to="/" end className={navLinkClass}>
-              Jobs
-            </NavLink>
+            <div className="flex min-w-0 flex-1 flex-col gap-4 lg:flex-row lg:items-center lg:justify-end lg:gap-4">
+              <nav className="grid min-w-0 grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:flex lg:items-center lg:justify-end lg:self-center lg:gap-2">
+                <NavLink to="/" end className={navLinkClass}>
+                  Jobs
+                </NavLink>
 
-            {session && (
-              <NavLink to="/dashboard" className={navLinkClass}>
-                Dashboard
-              </NavLink>
-            )}
+                {session && (
+                  <NavLink to="/dashboard" className={navLinkClass}>
+                    Dashboard
+                  </NavLink>
+                )}
 
-            {session && (
-              <NavLink to="/workspace" className={navLinkClass}>
-                Workspace
-              </NavLink>
-            )}
+                {session && (
+                  <NavLink to="/workspace" className={navLinkClass}>
+                    Workspace
+                  </NavLink>
+                )}
 
-            {session && (
-              <NavLink to="/profile" className={navLinkClass}>
-                Profile
-              </NavLink>
-            )}
+                {session && (
+                  <NavLink to="/profile" className={navLinkClass}>
+                    Profile
+                  </NavLink>
+                )}
+              </nav>
 
-            {session ? (
-              <NavLink
-                to="/post-job"
-                className={primaryCtaClass}
-                style={{
-                  color: "#0f140c",
-                  backgroundColor: "var(--accent)",
-                  borderColor: "var(--accent-border)",
-                  boxShadow:
-                    "0 0 0 1px var(--accent-ring), 0 10px 30px var(--accent-glow-soft)",
-                }}
-              >
-                Post a Job
-              </NavLink>
-            ) : (
-              <NavLink
-                to="/login?next=%2Fpost-job"
-                className={primaryCtaClass}
-                style={{
-                  color: "#0f140c",
-                  backgroundColor: "var(--accent)",
-                  borderColor: "var(--accent-border)",
-                  boxShadow:
-                    "0 0 0 1px var(--accent-ring), 0 10px 30px var(--accent-glow-soft)",
-                }}
-              >
-                Log in to post
-              </NavLink>
-            )}
+              <div className="flex flex-wrap items-center justify-start gap-6 sm:justify-end lg:flex-nowrap lg:self-center">
+                {session ? (
+                  <NavLink
+                    to="/post-job"
+                    className={primaryCtaClass}
+                    style={{
+                      color: "#0f140c",
+                      backgroundColor: "var(--accent)",
+                      borderColor: "var(--accent-border)",
+                      boxShadow:
+                        "0 0 0 1px var(--accent-ring), 0 10px 30px var(--accent-glow-soft)",
+                    }}
+                  >
+                    Post a Job
+                  </NavLink>
+                ) : (
+                  <NavLink
+                    to="/login?next=%2Fpost-job"
+                    className={primaryCtaClass}
+                    style={{
+                      color: "#0f140c",
+                      backgroundColor: "var(--accent)",
+                      borderColor: "var(--accent-border)",
+                      boxShadow:
+                        "0 0 0 1px var(--accent-ring), 0 10px 30px var(--accent-glow-soft)",
+                    }}
+                  >
+                    Log in to post
+                  </NavLink>
+                )}
 
-            <button
-              onClick={toggleTheme}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              className="ml-2 relative h-10 w-[112px] rounded-full border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-              style={{
-                borderColor: "var(--accent-soft)",
-                backgroundColor: "var(--surface-soft)",
-                boxShadow: "0 10px 28px var(--accent-glow)",
-              }}
-            >
-              <span
-                className="absolute top-1/2 h-8 w-[48px] -translate-y-1/2 rounded-full transition-all duration-300"
-                style={{
-                  left: theme === "dark" ? "calc(100% - 53px)" : "5px",
-                  backgroundColor: "var(--accent)",
-                  boxShadow: "0 8px 22px var(--accent-glow-soft)",
-                }}
-              />
-
-              <span className="relative z-10 grid h-full w-full grid-cols-2 text-[11px] font-semibold tracking-[0.08em]">
-                <span
-                  className="flex items-center justify-center transition-colors duration-300"
+                <button
+                  onClick={toggleTheme}
+                  aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                  className="relative h-9 w-[98px] shrink-0 rounded-full border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                   style={{
-                    color: theme === "light" ? "#0f140c" : "var(--text-muted)",
+                    borderColor: "var(--accent-soft)",
+                    backgroundColor: "var(--surface-soft)",
+                    boxShadow: "0 10px 28px var(--accent-glow)",
                   }}
                 >
-                  LIGHT
-                </span>
+                  <span
+                    className="absolute top-1/2 h-7 w-[42px] -translate-y-1/2 rounded-full transition-all duration-300"
+                    style={{
+                      left: theme === "dark" ? "calc(100% - 46px)" : "4px",
+                      backgroundColor: "var(--accent)",
+                      boxShadow: "0 8px 22px var(--accent-glow-soft)",
+                    }}
+                  />
 
-                <span
-                  className="flex items-center justify-center transition-colors duration-300"
-                  style={{
-                    color: theme === "dark" ? "#0f140c" : "var(--text-muted)",
-                  }}
-                >
-                  DARK
-                </span>
-              </span>
-            </button>
+                  <span className="relative z-10 grid h-full w-full grid-cols-2 px-[3px] text-[10px] font-semibold uppercase tracking-[0.06em]">
+                    <span
+                      className="flex h-full items-center justify-center text-center leading-none pb-[1px]"
+                      style={{
+                        color: theme === "light" ? "#0f140c" : "var(--text-muted)",
+                      }}
+                    >
+                      LIGHT
+                    </span>
 
-            {session ? (
-              <button
-                onClick={() => void logout()}
-                className="ml-2 rounded-xl border px-3 py-2 font-medium transition hover:bg-[var(--surface-soft)] hover:text-[var(--text-main)]"
-                style={{
-                  color: "var(--text-muted)",
-                  borderColor: "transparent",
-                  backgroundColor: "transparent",
-                }}
-              >
-                Log out
-              </button>
-            ) : (
-              <NavLink to="/login" className={navLinkClass}>
-                Log in
-              </NavLink>
-            )}
-          </nav>
+                    <span
+                      className="flex h-full items-center justify-center text-center leading-none pb-[1px]"
+                      style={{
+                        color: theme === "dark" ? "#0f140c" : "var(--text-muted)",
+                      }}
+                    >
+                      DARK
+                    </span>
+                  </span>
+                </button>
+
+                {session ? (
+                  <button
+                    onClick={() => void logout()}
+                    className="rounded-xl border px-3 py-2 font-medium transition hover:bg-[var(--surface-soft)] hover:text-[var(--text-main)]"
+                    style={{
+                      color: "var(--text-muted)",
+                      borderColor: "transparent",
+                      backgroundColor: "transparent",
+                    }}
+                  >
+                    Log out
+                  </button>
+                ) : (
+                  <NavLink to="/login" className={navLinkClass}>
+                    Log in
+                  </NavLink>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 

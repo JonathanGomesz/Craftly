@@ -509,6 +509,8 @@ export default function Workspace() {
       color: safeColor,
       borderColor: safeColor,
       backgroundColor: `${safeColor}18`,
+      textAlign: "center" as const,
+      textAlignLast: "center" as const,
     };
   }
 
@@ -526,24 +528,21 @@ export default function Workspace() {
         className="rounded-2xl border border-[color:var(--border-soft)] p-4 backdrop-blur-lg shadow-[var(--card-shadow-soft)]"
         style={{ backgroundColor: "var(--surface-soft)" }}
       >
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-4 text-sm text-[var(--text-muted)]">
-              <div className="min-w-0 text-base font-semibold text-[var(--text-main)] truncate">
-                {p.title}
-              </div>
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="min-w-0 space-y-3">
+            <div className="min-w-0 text-base font-semibold text-[var(--text-main)] truncate">
+              {p.title}
+            </div>
 
-              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
               <div className="truncate">{clientLabel}</div>
-
-              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <div className="text-[var(--text-faint)]">•</div>
               <div className="truncate">{subclientLabel}</div>
-
-              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <div className="text-[var(--text-faint)]">•</div>
               <select
                 value={p.status_id ?? ""}
                 onChange={(e) => void updateStatus(p.id, e.target.value)}
-                className="min-w-[110px] appearance-none rounded-full border px-3 py-1 text-xs font-medium outline-none transition"
+                className="h-10 min-w-[140px] flex-none appearance-none rounded-full border px-4 text-center text-xs font-medium leading-none outline-none transition"
                 style={inlineSelectStyle(statusMeta?.color ?? null)}
               >
                 <option value="" className="text-black">
@@ -559,12 +558,11 @@ export default function Workspace() {
                   </option>
                 ))}
               </select>
-
-              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <div className="text-[var(--text-faint)]">•</div>
               <select
                 value={p.priority_id ?? ""}
                 onChange={(e) => void updatePriority(p.id, e.target.value)}
-                className="min-w-[110px] appearance-none rounded-full border px-3 py-1 text-xs font-medium outline-none transition"
+                className="h-10 min-w-[140px] flex-none appearance-none rounded-full border px-4 text-center text-xs font-medium leading-none outline-none transition"
                 style={inlineSelectStyle(priorityMeta?.color ?? null)}
               >
                 <option value="" className="text-black">
@@ -580,12 +578,11 @@ export default function Workspace() {
                   </option>
                 ))}
               </select>
-
-              <div className="hidden xl:block text-[var(--text-faint)]">|</div>
+              <div className="text-[var(--text-faint)]">•</div>
               <select
                 value={p.type_id ?? ""}
                 onChange={(e) => void updateType(p.id, e.target.value)}
-                className="min-w-[110px] appearance-none rounded-full border px-3 py-1 text-xs font-medium outline-none transition"
+                className="h-10 min-w-[160px] flex-none appearance-none rounded-full border px-4 text-center text-xs font-medium leading-none outline-none transition"
                 style={inlineSelectStyle(typeMeta?.color ?? null)}
               >
                 <option value="" className="text-black">
@@ -600,7 +597,7 @@ export default function Workspace() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start xl:self-center">
+          <div className="flex items-center gap-2 self-start lg:self-center lg:justify-end">
             <button
               onClick={() => openEditModal(p)}
               className="px-3 py-2 rounded-lg border border-[color:var(--border-soft)] bg-[var(--surface-soft)] text-sm text-[var(--text-main)] transition hover:bg-[var(--surface-hover)]"
@@ -854,7 +851,7 @@ export default function Workspace() {
           </div>
 
           <div className="flex flex-col gap-3 md:items-end">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full md:w-auto">
+            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 md:w-auto">
               <select
                 value={clientFilter}
                 onChange={(e) => setClientFilter(e.target.value)}
@@ -928,7 +925,7 @@ export default function Workspace() {
               </select>
             </div>
 
-            <div className="flex items-center gap-3 justify-end">
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => {
